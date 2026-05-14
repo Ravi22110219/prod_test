@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+*.py[cod]
+
+node_modules/
+dist/
+frontend/dist/
+backend/static/
+
+.pytest_cache/
+.vite/
+.coverage
