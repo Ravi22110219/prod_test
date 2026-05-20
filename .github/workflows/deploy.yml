@@ -55,4 +55,4 @@ jobs:
           sudo systemctl status prod_test.service --no-pager
 
           curl -fsS http://127.0.0.1:8000/api/health
-REMOTE
+          REMOTE
