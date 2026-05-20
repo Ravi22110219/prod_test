@@ -1,6 +1,10 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      network: host
+    dns:
+      - 10.0.136.7
     ports:
       - "8000:8000"
     environment:

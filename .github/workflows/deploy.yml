@@ -1,0 +1,58 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production server
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -p "${{ secrets.PROD_SSH_PORT || '22' }}" "${{ secrets.PROD_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy over SSH
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT || '22' }}
+          APP_DIR: /home/production/apps/prod_test
+          BRANCH: main
+          REPO_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_USER@$PROD_HOST" \
+            "APP_DIR='$APP_DIR' BRANCH='$BRANCH' REPO_URL='$REPO_URL' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          if [ ! -d "$APP_DIR/.git" ]; then
+            mkdir -p "$(dirname "$APP_DIR")"
+            git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"
+          fi
+
+          cd "$APP_DIR"
+          git fetch origin "$BRANCH"
+          git checkout "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+
+          sudo systemctl daemon-reload
+          sudo systemctl restart prod_test.service
+          sudo systemctl status prod_test.service --no-pager
+
+          curl -fsS http://127.0.0.1:8000/api/health
+REMOTE

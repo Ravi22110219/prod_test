@@ -33,7 +33,7 @@ def cors_origins() -> list[str]:
 
 
 app = FastAPI(
-    title="React FastAPI Deployment Test",
+    title="React FastAPI Deployment Test By Ravi",
     version="0.1.0",
     description="A tiny API used to verify frontend/backend deployment.",
 )
